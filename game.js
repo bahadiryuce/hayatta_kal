@@ -11,11 +11,20 @@ let needs = {
 };
 
 let alive = true;
+let health = 100;
+let isNight = false;
+let lastAttackMessage = "";
 
 let structures = {
   well: 0,
   trap: 0,
   hut: 0
+};
+
+let inventory = {
+  fire: false,
+  knife: false,
+  jar: false
 };
 
 function gather(type) {
@@ -41,21 +50,35 @@ function build(type) {
   }
 }
 
+function craft(item) {
+  const cost = { fire: 3, knife: 5, jar: 4 };
+  if (resources.wood >= cost[item] && !inventory[item]) {
+    resources.wood -= cost[item];
+    inventory[item] = true;
+    document.getElementById("status").innerText = `${item} üretildi!`;
+    updateDisplay();
+  } else {
+    document.getElementById("status").innerText = "Yeterli odunun yok ya da zaten ürettin!";
+  }
+}
+
 function updateDisplay() {
   document.getElementById("resources").innerText =
     `Odun: ${resources.wood} | Su: ${resources.water} | Yemek: ${resources.food}`;
 
   document.getElementById("needs").innerText =
-    `Susuzluk: ${needs.thirst} | Açlık: ${needs.hunger} | Üşüme: ${needs.cold}`;
+    `Susuzluk: ${Math.floor(needs.thirst)} | Açlık: ${Math.floor(needs.hunger)} | Üşüme: ${Math.floor(needs.cold)} | Can: ${Math.floor(health)}`;
 
   document.getElementById("structures").innerText =
     `Kuyular: ${structures.well} | Tuzaklar: ${structures.trap} | Barakalar: ${structures.hut}`;
 
-  if (!alive) {
-    document.getElementById("status").innerText = "☠️ Öldün... Kurtuluş mümkün olmadı.";
-  } else {
-    document.getElementById("status").innerText = "🧍 Hayattasın...";
-  }
+  const statusText = alive
+    ? (isNight ? `🌙 Gece... dikkatli ol! ${lastAttackMessage}` : "☀️ Gündüz. Topla, hazırla, yaşa.")
+    : "☠️ Öldün... kurtuluş mümkün olmadı.";
+
+  document.getElementById("status").innerText = statusText;
+
+  document.body.style.backgroundColor = isNight ? "#111" : "#222";
 }
 
 function consumeResources() {
@@ -63,7 +86,7 @@ function consumeResources() {
 
   needs.thirst -= 2;
   needs.hunger -= 1;
-  needs.cold -= 1;
+  needs.cold -= isNight ? (inventory.fire ? 1 : 2) : 1;
 
   if (resources.water > 0 && needs.thirst < 50) {
     resources.water--;
@@ -75,8 +98,14 @@ function consumeResources() {
     needs.hunger += 10;
   }
 
+  if (structures.hut > 0 && needs.cold < 100 && isNight) {
+    needs.cold += structures.hut * 1.5;
+    if (needs.cold > 100) needs.cold = 100;
+  }
+
   if (needs.thirst <= 0 || needs.hunger <= 0 || needs.cold <= 0) {
-    alive = false;
+    health -= 10;
+    if (health <= 0) alive = false;
   }
 
   updateDisplay();
@@ -88,15 +117,37 @@ function autoProduce() {
   resources.water += structures.well;
   resources.food += structures.trap;
 
-  if (structures.hut > 0 && needs.cold < 100) {
-    needs.cold += structures.hut;
-    if (needs.cold > 100) needs.cold = 100;
-  }
-
   updateDisplay();
 }
 
-setInterval(consumeResources, 5000); // 5 saniyede bir ihtiyaçlar azalır
-setInterval(autoProduce, 10000); // 10 saniyede bir otomatik kaynak üretimi
+function triggerNightAttack() {
+  if (!isNight || !alive) return;
+
+  const attackChance = Math.random();
+  if (attackChance < 0.4) {
+    if (structures.hut >= 2) {
+      lastAttackMessage = "Ama barakaların seni korudu.";
+    } else {
+      let damage = inventory.knife ? 7 : 15;
+      health -= damage;
+      needs.cold -= 5;
+      needs.hunger -= 5;
+      lastAttackMessage = `Bir şey sana saldırdı! (${damage} can kaybettin)`;
+      if (health <= 0) alive = false;
+    }
+  } else {
+    lastAttackMessage = "";
+  }
+}
+
+function toggleDayNight() {
+  isNight = !isNight;
+  if (isNight) triggerNightAttack();
+  updateDisplay();
+}
+
+setInterval(consumeResources, 5000);
+setInterval(autoProduce, 10000);
+setInterval(toggleDayNight, 30000);
 
 updateDisplay();
