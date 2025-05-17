@@ -160,6 +160,8 @@ function triggerNightAttack() {
   } else {
     lastAttackMessage = "";
   }
+updateStats()
+ document.getElementById("crafted").innerText = `Üretilenler: ${craftedItems.join(", ") || "Yok"}`;
 }
 
 function toggleDayNight() {
