@@ -14,6 +14,7 @@ let alive = true;
 let health = 100;
 let isNight = false;
 let lastAttackMessage = "";
+let isSick = false;
 
 let structures = {
   well: 0,
@@ -24,7 +25,8 @@ let structures = {
 let inventory = {
   fire: false,
   knife: false,
-  jar: false
+  jar: false,
+  medicine: false
 };
 
 function gather(type) {
@@ -51,11 +53,18 @@ function build(type) {
 }
 
 function craft(item) {
-  const cost = { fire: 3, knife: 5, jar: 4 };
+  const cost = { fire: 3, knife: 5, jar: 4, medicine: 8 };
   if (resources.wood >= cost[item] && !inventory[item]) {
     resources.wood -= cost[item];
     inventory[item] = true;
-    document.getElementById("status").innerText = `${item} üretildi!`;
+
+    if (item === "medicine" && isSick) {
+      isSick = false;
+      document.getElementById("status").innerText = "İlaç içtin, artık hastalığın geçti!";
+    } else {
+      document.getElementById("status").innerText = `${item} üretildi!`;
+    }
+
     updateDisplay();
   } else {
     document.getElementById("status").innerText = "Yeterli odunun yok ya da zaten ürettin!";
@@ -67,7 +76,7 @@ function updateDisplay() {
     `Odun: ${resources.wood} | Su: ${resources.water} | Yemek: ${resources.food}`;
 
   document.getElementById("needs").innerText =
-    `Susuzluk: ${Math.floor(needs.thirst)} | Açlık: ${Math.floor(needs.hunger)} | Üşüme: ${Math.floor(needs.cold)} | Can: ${Math.floor(health)}`;
+    `Susuzluk: ${Math.floor(needs.thirst)} | Açlık: ${Math.floor(needs.hunger)} | Üşüme: ${Math.floor(needs.cold)} | Can: ${Math.floor(health)} | ${isSick ? "🤒 Hastasın!" : "🧘 Sağlıklısın"}`;
 
   document.getElementById("structures").innerText =
     `Kuyular: ${structures.well} | Tuzaklar: ${structures.trap} | Barakalar: ${structures.hut}`;
@@ -108,6 +117,11 @@ function consumeResources() {
     if (health <= 0) alive = false;
   }
 
+  if (isSick) {
+    health -= 3;
+    if (health <= 0) alive = false;
+  }
+
   updateDisplay();
 }
 
@@ -132,6 +146,12 @@ function triggerNightAttack() {
       health -= damage;
       needs.cold -= 5;
       needs.hunger -= 5;
+
+      // Hastalık olasılığı
+      if (Math.random() < 0.3) {
+        isSick = true;
+      }
+
       lastAttackMessage = `Bir şey sana saldırdı! (${damage} can kaybettin)`;
       if (health <= 0) alive = false;
     }
