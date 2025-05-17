@@ -1,3 +1,5 @@
+let isSick = false;
+
 let resources = {
   wood: 0,
   water: 0,
