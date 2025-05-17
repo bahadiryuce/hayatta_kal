@@ -169,6 +169,40 @@ function toggleDayNight() {
   if (isNight) triggerNightAttack();
   updateDisplay();
 }
+const craftedItems = [];
+
+const craftRecipes = {
+  "balta": { odun: 2, taş: 1 },
+  "mızrak": { odun: 1, taş: 2 },
+  "ateş": { odun: 3 },
+  "çadır": { odun: 10, taş: 5, yemek: 2 }
+};
+
+function craft(itemName) {
+  const recipe = craftRecipes[itemName];
+  if (!recipe) {
+    logMessage(`❌ Bu eşya craft edilemez.`);
+    return;
+  }
+
+  // Kaynak kontrolü
+  for (const resource in recipe) {
+    if (!resources[resource] || resources[resource] < recipe[resource]) {
+      logMessage(`❌ Yetersiz kaynak: ${resource}`);
+      return;
+    }
+  }
+
+  // Kaynakları azalt
+  for (const resource in recipe) {
+    resources[resource] -= recipe[resource];
+  }
+
+  craftedItems.push(itemName);
+  logMessage(`✅ ${itemName} başarıyla craft edildi.`);
+  updateStats();
+}
+
 
 setInterval(consumeResources, 5000);
 setInterval(autoProduce, 10000);
