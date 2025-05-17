@@ -1,3 +1,161 @@
+// game.js
+
+let day = 1;
+let health = 100;
+let hunger = 0;
+let thirst = 0;
+let isSick = false;
+
+let inventory = {
+  wood: 0,
+  stone: 0,
+  water: 0,
+  food: 0,
+  campfire: 0,
+  shelter: 0
+};
+
+const tasks = [
+  { id: 1, text: "3 Odun Topla", done: false, check: () => inventory.wood >= 3 },
+  { id: 2, text: "Kamp Ateşi Yap", done: false, check: () => inventory.campfire >= 1 },
+  { id: 3, text: "Barınak Yap", done: false, check: () => inventory.shelter >= 1 },
+  { id: 4, text: "Bir Gün Hayatta Kal", done: false, check: () => day > 1 },
+];
+
+function updateStats() {
+  document.getElementById("stats").innerHTML = `
+    Gün: ${day}<br>
+    Sağlık: ${health}<br>
+    Açlık: ${hunger}<br>
+    Susuzluk: ${thirst}<br>
+    Durum: ${isSick ? 'HASTA' : 'İyi'}
+  `;
+}
+
+function updateInventory() {
+  document.getElementById("inventory").innerHTML = `
+    Odun: ${inventory.wood}, Taş: ${inventory.stone}, Su: ${inventory.water}, Yemek: ${inventory.food}<br>
+    Kamp Ateşi: ${inventory.campfire}, Barınak: ${inventory.shelter}
+  `;
+}
+
+function updateTasks() {
+  tasks.forEach(task => {
+    if (!task.done && task.check()) task.done = true;
+  });
+  document.getElementById("tasks").innerHTML =
+    "Görevler:" +
+    tasks.map(t => `<div class="${t.done ? 'task-done' : ''}">${t.text}</div>`).join('');
+}
+
+function showMessage(msg) {
+  const messages = document.getElementById("messages");
+  const p = document.createElement("p");
+  p.innerText = `Gün ${day}: ${msg}`;
+  messages.appendChild(p);
+  messages.scrollTop = messages.scrollHeight;
+}
+
+function gather(type) {
+  const amounts = { wood: 1, stone: 1, water: 1, food: 1 };
+  inventory[type] += amounts[type] || 0;
+  showMessage(`${type.toUpperCase()} topladınız.`);
+  updateInventory();
+  updateTasks();
+}
+
+function craft(item) {
+  if (item === "campfire") {
+    if (inventory.wood >= 3 && inventory.stone >= 2) {
+      inventory.wood -= 3;
+      inventory.stone -= 2;
+      inventory.campfire++;
+      showMessage("Kamp ateşi yaptınız.");
+    } else {
+      showMessage("Kamp ateşi için yeterli kaynak yok.");
+    }
+  } else if (item === "shelter") {
+    if (inventory.wood >= 5 && inventory.stone >= 3) {
+      inventory.wood -= 5;
+      inventory.stone -= 3;
+      inventory.shelter++;
+      showMessage("Barınak yaptınız.");
+    } else {
+      showMessage("Barınak için yeterli kaynak yok.");
+    }
+  }
+  updateInventory();
+  updateTasks();
+}
+
+function useItem(item) {
+  if (item === "water" && inventory.water > 0) {
+    inventory.water--;
+    thirst -= 30;
+    if (thirst < 0) thirst = 0;
+    showMessage("Su içtiniz.");
+  } else if (item === "food" && inventory.food > 0) {
+    inventory.food--;
+    hunger -= 30;
+    if (hunger < 0) hunger = 0;
+    showMessage("Yemek yediniz.");
+  } else {
+    showMessage("Bu eşyadan yok.");
+  }
+  updateInventory();
+  updateStats();
+}
+
+function endDay() {
+  if (health <= 0) {
+    alert("Sağlığınız tükendi. Hayatta kalamadınız...");
+    resetGame();
+    return;
+  }
+
+  day++;
+  hunger += 15;
+  thirst += 20;
+
+  if (isSick) health -= 10;
+  if (hunger >= 100) health -= 15;
+  if (thirst >= 100) health -= 20;
+
+  if (!isSick && Math.random() < 0.2) {
+    isSick = true;
+    showMessage("Hastalandınız! Sağlık her gün düşecek.");
+  }
+
+  updateStats();
+  updateTasks();
+  checkGameOver();
+}
+
+function checkGameOver() {
+  if (health <= 0) {
+    alert("Sağlığınız bitti. Hayatta kalmayı başaramadınız.");
+    resetGame();
+  }
+}
+
+function resetGame() {
+  day = 1;
+  health = 100;
+  hunger = 0;
+  thirst = 0;
+  isSick = false;
+  for (let key in inventory) inventory[key] = 0;
+  tasks.forEach(t => t.done = false);
+  updateStats();
+  updateInventory();
+  updateTasks();
+  showMessage("Oyun sıfırlandı.");
+}
+
+// İlk gün başlat
+updateStats();
+updateInventory();
+updateTasks();
 let resources = {
     odun: 10,
     taş: 5,
