@@ -1,15 +1,14 @@
-let isSick = false;
-
 let resources = {
-  wood: 0,
-  water: 0,
-  food: 0
+    odun: 10,
+    taş: 5,
+    yemek: 8,
+    su: 10
 };
 
 let needs = {
-  thirst: 100,
-  hunger: 100,
-  cold: 100
+    açlık: 0,
+    susuzluk: 0,
+    yorgunluk: 0
 };
 
 let alive = true;
@@ -17,195 +16,126 @@ let health = 100;
 let isNight = false;
 let lastAttackMessage = "";
 let isSick = false;
-
-let structures = {
-  well: 0,
-  trap: 0,
-  hut: 0
-};
-
-let inventory = {
-  fire: false,
-  knife: false,
-  jar: false,
-  medicine: false
-};
-
-function gather(type) {
-  if (!alive) return;
-
-  if (type === "wood") resources.wood += 1;
-  if (type === "water") resources.water += 1;
-  if (type === "food") resources.food += 1;
-
-  updateDisplay();
-}
-
-function build(type) {
-  if (!alive) return;
-
-  const cost = { well: 5, trap: 7, hut: 10 };
-  if (resources.wood >= cost[type]) {
-    resources.wood -= cost[type];
-    structures[type]++;
-    updateDisplay();
-  } else {
-    document.getElementById("status").innerText = "Yeterli odunun yok!";
-  }
-}
-
-function craft(item) {
-  const cost = { fire: 3, knife: 5, jar: 4, medicine: 8 };
-  if (resources.wood >= cost[item] && !inventory[item]) {
-    resources.wood -= cost[item];
-    inventory[item] = true;
-
-    if (item === "medicine" && isSick) {
-      isSick = false;
-      document.getElementById("status").innerText = "İlaç içtin, artık hastalığın geçti!";
-    } else {
-      document.getElementById("status").innerText = `${item} üretildi!`;
-    }
-
-    updateDisplay();
-  } else {
-    document.getElementById("status").innerText = "Yeterli odunun yok ya da zaten ürettin!";
-  }
-}
-
-function updateDisplay() {
-  document.getElementById("resources").innerText =
-    `Odun: ${resources.wood} | Su: ${resources.water} | Yemek: ${resources.food}`;
-
-  document.getElementById("needs").innerText =
-    `Susuzluk: ${Math.floor(needs.thirst)} | Açlık: ${Math.floor(needs.hunger)} | Üşüme: ${Math.floor(needs.cold)} | Can: ${Math.floor(health)} | ${isSick ? "🤒 Hastasın!" : "🧘 Sağlıklısın"}`;
-
-  document.getElementById("structures").innerText =
-    `Kuyular: ${structures.well} | Tuzaklar: ${structures.trap} | Barakalar: ${structures.hut}`;
-
-  const statusText = alive
-    ? (isNight ? `🌙 Gece... dikkatli ol! ${lastAttackMessage}` : "☀️ Gündüz. Topla, hazırla, yaşa.")
-    : "☠️ Öldün... kurtuluş mümkün olmadı.";
-
-  document.getElementById("status").innerText = statusText;
-
-  document.body.style.backgroundColor = isNight ? "#111" : "#222";
-}
-
-function consumeResources() {
-  if (!alive) return;
-
-  needs.thirst -= 2;
-  needs.hunger -= 1;
-  needs.cold -= isNight ? (inventory.fire ? 1 : 2) : 1;
-
-  if (resources.water > 0 && needs.thirst < 50) {
-    resources.water--;
-    needs.thirst += 10;
-  }
-
-  if (resources.food > 0 && needs.hunger < 50) {
-    resources.food--;
-    needs.hunger += 10;
-  }
-
-  if (structures.hut > 0 && needs.cold < 100 && isNight) {
-    needs.cold += structures.hut * 1.5;
-    if (needs.cold > 100) needs.cold = 100;
-  }
-
-  if (needs.thirst <= 0 || needs.hunger <= 0 || needs.cold <= 0) {
-    health -= 10;
-    if (health <= 0) alive = false;
-  }
-
-  if (isSick) {
-    health -= 3;
-    if (health <= 0) alive = false;
-  }
-
-  updateDisplay();
-}
-
-function autoProduce() {
-  if (!alive) return;
-
-  resources.water += structures.well;
-  resources.food += structures.trap;
-
-  updateDisplay();
-}
-
-function triggerNightAttack() {
-  if (!isNight || !alive) return;
-
-  const attackChance = Math.random();
-  if (attackChance < 0.4) {
-    if (structures.hut >= 2) {
-      lastAttackMessage = "Ama barakaların seni korudu.";
-    } else {
-      let damage = inventory.knife ? 7 : 15;
-      health -= damage;
-      needs.cold -= 5;
-      needs.hunger -= 5;
-
-      // Hastalık olasılığı
-      if (Math.random() < 0.3) {
-        isSick = true;
-      }
-
-      lastAttackMessage = `Bir şey sana saldırdı! (${damage} can kaybettin)`;
-      if (health <= 0) alive = false;
-    }
-  } else {
-    lastAttackMessage = "";
-  }
-updateStats()
- document.getElementById("crafted").innerText = `Üretilenler: ${craftedItems.join(", ") || "Yok"}`;
-}
-
-function toggleDayNight() {
-  isNight = !isNight;
-  if (isNight) triggerNightAttack();
-  updateDisplay();
-}
-const craftedItems = [];
+let craftedItems = [];
 
 const craftRecipes = {
-  "balta": { odun: 2, taş: 1 },
-  "mızrak": { odun: 1, taş: 2 },
-  "ateş": { odun: 3 },
-  "çadır": { odun: 10, taş: 5, yemek: 2 }
+    "balta": { odun: 2, taş: 1 },
+    "mızrak": { odun: 1, taş: 2 },
+    "ateş": { odun: 3 },
+    "çadır": { odun: 10, taş: 5, yemek: 2 }
 };
 
-function craft(itemName) {
-  const recipe = craftRecipes[itemName];
-  if (!recipe) {
-    logMessage(`❌ Bu eşya craft edilemez.`);
-    return;
-  }
-
-  // Kaynak kontrolü
-  for (const resource in recipe) {
-    if (!resources[resource] || resources[resource] < recipe[resource]) {
-      logMessage(`❌ Yetersiz kaynak: ${resource}`);
-      return;
-    }
-  }
-
-  // Kaynakları azalt
-  for (const resource in recipe) {
-    resources[resource] -= recipe[resource];
-  }
-
-  craftedItems.push(itemName);
-  logMessage(`✅ ${itemName} başarıyla craft edildi.`);
-  updateStats();
+function updateStats() {
+    document.getElementById("wood").innerText = `Odun: ${resources.odun}`;
+    document.getElementById("stone").innerText = `Taş: ${resources.taş}`;
+    document.getElementById("food").innerText = `Yemek: ${resources.yemek}`;
+    document.getElementById("water").innerText = `Su: ${resources.su}`;
+    document.getElementById("hunger").innerText = `Açlık: ${needs.açlık}`;
+    document.getElementById("thirst").innerText = `Susuzluk: ${needs.susuzluk}`;
+    document.getElementById("fatigue").innerText = `Yorgunluk: ${needs.yorgunluk}`;
+    document.getElementById("health").innerText = `Sağlık: ${health}`;
+    document.getElementById("status").innerText = alive ? "Durum: Hayatta" : "Durum: Ölü";
+    document.getElementById("crafted").innerText = `Üretilenler: ${craftedItems.join(", ") || "Yok"}`;
+    document.getElementById("log").innerText = lastAttackMessage;
 }
 
+function logMessage(message) {
+    lastAttackMessage = message;
+    updateStats();
+}
 
-setInterval(consumeResources, 5000);
-setInterval(autoProduce, 10000);
-setInterval(toggleDayNight, 30000);
+function craft(itemName) {
+    const recipe = craftRecipes[itemName];
+    if (!recipe) {
+        logMessage(`❌ Bu eşya craft edilemez.`);
+        return;
+    }
 
-updateDisplay();
+    for (const resource in recipe) {
+        if (!resources[resource] || resources[resource] < recipe[resource]) {
+            logMessage(`❌ Yetersiz kaynak: ${resource}`);
+            return;
+        }
+    }
+
+    for (const resource in recipe) {
+        resources[resource] -= recipe[resource];
+    }
+
+    craftedItems.push(itemName);
+    logMessage(`✅ ${itemName} başarıyla craft edildi.`);
+}
+
+function performTask(task) {
+    if (!alive) return;
+
+    let result = "";
+
+    switch(task) {
+        case "odun":
+            let odunMiktarı = craftedItems.includes("balta") ? 5 : 3;
+            resources.odun += odunMiktarı;
+            result = `🌲 ${odunMiktarı} odun topladın.`;
+            break;
+        case "taş":
+            resources.taş += 2;
+            result = "🪨 2 taş topladın.";
+            break;
+        case "yemek":
+            resources.yemek += 2;
+            result = "🍖 2 yemek buldun.";
+            break;
+        case "su":
+            resources.su += 2;
+            result = "💧 2 su buldun.";
+            break;
+    }
+
+    needs.açlık += 5;
+    needs.susuzluk += 5;
+    needs.yorgunluk += 5;
+
+    updateStats();
+    logMessage(result);
+}
+
+function endDay() {
+    if (!alive) return;
+
+    isNight = true;
+
+    // Gecelik ihtiyaçlar
+    let açlıkArtışı = craftedItems.includes("çadır") ? 4 : 8;
+    let susuzlukArtışı = craftedItems.includes("çadır") ? 4 : 8;
+    let yorgunlukArtışı = craftedItems.includes("çadır") ? 3 : 6;
+
+    needs.açlık += açlıkArtışı;
+    needs.susuzluk += susuzlukArtışı;
+    needs.yorgunluk += yorgunlukArtışı;
+
+    // Gece hastalanma
+    let hastalanmaIhtimali = craftedItems.includes("ateş") ? 0.2 : 0.5;
+    if (Math.random() < hastalanmaIhtimali) {
+        isSick = true;
+        health -= 10;
+        logMessage("🤒 Gece hastalandın. Sağlığın azaldı.");
+    } else {
+        isSick = false;
+    }
+
+    // Gece saldırısı
+    let saldırıVar = Math.random() < 0.3;
+    if (saldırıVar) {
+        let zarar = craftedItems.includes("mızrak") ? 10 : 20;
+        health -= zarar;
+        logMessage(`👹 Gece saldırısı oldu! ${zarar} hasar aldın.`);
+    }
+
+    if (needs.açlık >= 100 || needs.susuzluk >= 100 || health <= 0) {
+        alive = false;
+        logMessage("☠️ Hayatta kalamadın...");
+    }
+
+    updateStats();
+    isNight = false;
+}
